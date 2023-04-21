@@ -73,7 +73,10 @@ void execmd(char *arg, char *lineptr)
 
 	signal(SIGQUIT, handl_sgnl);
 	alloc_mem(&lineptr, &lineptr_cpy, &argv);
+	if (dir_ext(argv[0]) == 0)
 	child_pid = fork();
+	else
+		exit(EXIT_SUCCESS);
 	if (child_pid == -1)
 	{
 		free_mem_sh(argv, 2, lineptr, lineptr_cpy);
