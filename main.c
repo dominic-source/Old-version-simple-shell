@@ -1,4 +1,6 @@
 #include "main.h"
+char ext_sts[12];
+
 #define FREE_EXIT\
 	do {\
 		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str);\
@@ -7,8 +9,12 @@
 	while (0)
 #define FREE_EXIT_B\
 	do {\
+		if (argv[1] != NULL)\
+		{\
+			strcpy(ext_sts, argv[1]);\
+		} \
 		free_mem_sh(argv, 2, lineptr, lineptr_cpy);\
-		exit(EXIT_SUCCESS);\
+		exit(ext_sts != NULL ? atoi(ext_sts) : EXIT_SUCCESS);\
 	} \
 	while (0)
 #define WAIT_FREE\
@@ -38,7 +44,6 @@ int main(int ac, char **argv)
 	int state = 1;
 
 	parent_pid = getpid();
-
 	if (ac != 1)
 		perror("Usage: ./hsh");
 	while (state)
@@ -134,3 +139,4 @@ void execmd(char *arg, char *lineptr)
 			free_mem_sh(argv, 2, lineptr, lineptr_cpy);
 	}
 }
+

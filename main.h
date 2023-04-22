@@ -17,6 +17,7 @@ typedef struct srch
 }SRCH;
 void rem_nwln(char *str);
 void handl_sgnl(int sig);
+void free_signal_handler(int);
 void execmd(char *arg, char *argv);
 void alloc_mem(char **, char **, char ***);
 void free_mem_sh(char **argv, int count, ...);
