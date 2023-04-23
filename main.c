@@ -1,5 +1,33 @@
 #include "main.h"
 
+#define FREE_EXIT\
+	do {\
+		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str);\
+		exit(EXIT_SUCCESS);\
+	} \
+	while (0)
+#define FREE_EXIT_B\
+	do {\
+		if (argv[1] != NULL)\
+		{\
+			strcpy(ext_sts, argv[1]);\
+		} \
+		free_mem_sh(argv, 2, lineptr, lineptr_cpy);\
+		exit(ext_sts != NULL ? atoi(ext_sts) : EXIT_SUCCESS);\
+	} \
+	while (0)
+#define WAIT_FREE\
+	do {\
+		wait(&status);\
+		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str); \
+	} \
+	while (0)
+#define CREATE_CHILD\
+	do {\
+		child_pid = fork();\
+		pathname = new_str->str;\
+	} \
+	while (0)
 /**
  * main - run a shell
  * @ac: count
@@ -15,21 +43,24 @@ int main(int ac, char **argv)
 	int state = 1;
 
 	parent_pid = getpid();
-
 	if (ac != 1)
 		perror("Usage: ./hsh");
 	while (state)
 	{
 		/* start C shell */
 		printf("($) ");
+		++comnd_cnt;
 		line = getline(&lineptr, &len, stdin);
 		if (line == -1)
 		{
 			printf("\n");
 			free(lineptr);
-			kill(0, SIGQUIT);
+			exit(EXIT_SUCCESS);
 		}
-		execmd(arg, lineptr);
+		if (lineptr != NULL)
+			execmd(arg, lineptr);
+		else
+			free(lineptr);
 		len = 0;
 
 	}
@@ -57,6 +88,7 @@ void free_mem_sh(char **argv, int count, ...)
 		ptr = va_arg(ap, char *);
 		free(ptr);
 	}
+	va_end(ap);
 }
 
 
@@ -67,47 +99,44 @@ void free_mem_sh(char **argv, int count, ...)
  */
 void execmd(char *arg, char *lineptr)
 {
-	char *lineptr_cpy, **argv;
+	char *lineptr_cpy, *pathname, **argv;
+	SRCH *new_str;
+	pid_t child_pid = 1;
 	int ex, status;
-	pid_t child_pid;
+	char ext_sts[12];
 
-	signal(SIGQUIT, handl_sgnl);
 	alloc_mem(&lineptr, &lineptr_cpy, &argv);
-	if (dir_ext(argv[0]) == 0)
-	child_pid = fork();
-	else
-		exit(EXIT_SUCCESS);
-	if (child_pid == -1)
-	{
-		free_mem_sh(argv, 2, lineptr, lineptr_cpy);
-		exit(EXIT_SUCCESS);
-	}
-	if (child_pid == 0)
+	if (argv == NULL)
+		return;
+	if (argv[0] != NULL)
+		new_str = dir_ext(argv[0]);
+	if (new_str == NULL)
 	{
 		if (strncmp("exit", argv[0], 4) == 0)
-		{
-			free_mem_sh(argv, 2, lineptr, lineptr_cpy);
-			exit(EXIT_SUCCESS);
-		}
-		ex = execve(argv[0], argv, environ);
+			FREE_EXIT_B;
+		else
+			dprintf(STDERR_FILENO, "%s: %i: %s: not found\n", arg, comnd_cnt, argv[0]);
+	}
+	else if (new_str->val == 0)
+		CREATE_CHILD;
+	if (child_pid == -1)
+		FREE_EXIT;
+	else if (child_pid == 0)
+	{
+		ex = execve(pathname, argv, environ);
 		if (ex == -1)
 		{
 			dprintf(STDERR_FILENO, "%s: ", arg);
 			perror("");
-			free_mem_sh(argv, 2, lineptr, lineptr_cpy);
-			exit(EXIT_FAILURE);
 		}
-		free_mem_sh(argv, 2, lineptr, lineptr_cpy);
-		exit(EXIT_SUCCESS);
+		FREE_EXIT;
 	}
 	else
 	{
-		wait(&status);
-		if (strncmp("exit", argv[0], 4) == 0)
-		{
+		if (child_pid != 1)
+			WAIT_FREE;
+		else if (child_pid == 1)
 			free_mem_sh(argv, 2, lineptr, lineptr_cpy);
-			exit(EXIT_SUCCESS);
-		}
-		free_mem_sh(argv, 2, lineptr, lineptr_cpy);
 	}
 }
+
