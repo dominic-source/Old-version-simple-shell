@@ -1,5 +1,4 @@
 #include "main.h"
-char ext_sts[12];
 
 #define FREE_EXIT\
 	do {\
@@ -104,6 +103,7 @@ void execmd(char *arg, char *lineptr)
 	SRCH *new_str;
 	pid_t child_pid = 1;
 	int ex, status;
+	char ext_sts[12];
 
 	alloc_mem(&lineptr, &lineptr_cpy, &argv);
 	if (argv == NULL)
