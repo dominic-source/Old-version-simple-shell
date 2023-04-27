@@ -1,25 +1,22 @@
 #include "main.h"
-
 #define FREE_EXIT\
 	do {\
 		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str);\
+		free_mem_sh(my_environ, 0);\
 		exit(EXIT_SUCCESS);\
 	} \
 	while (0)
 #define FREE_EXIT_B\
 	do {\
-		if (argv[1] != NULL)\
-		{\
-			strcpy(ext_sts, argv[1]);\
-		} \
 		free_mem_sh(argv, 2, lineptr, lineptr_cpy);\
+		free_mem_sh(my_environ, 0);\
 		exit(ext_sts != NULL ? atoi(ext_sts) : EXIT_SUCCESS);\
 	} \
 	while (0)
 #define WAIT_FREE\
 	do {\
 		wait(&status);\
-		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str); \
+		free_mem_sh(argv, 4, lineptr, lineptr_cpy, new_str, new_str->str);\
 	} \
 	while (0)
 #define CREATE_CHILD\
@@ -36,34 +33,45 @@
  */
 int main(int ac, char **argv)
 {
-	char *arg = argv[0];
-	char *lineptr = NULL;
+	char *arg = argv[0], *lineptr = NULL, **check_env, *start = "($) ";
 	ssize_t line;
 	size_t len = 0;
-	int state = 1;
+	int state = 1, isNonInteractive;
 
 	parent_pid = getpid();
+	getcwd(prev_dir, 1024);
+	switch_dir = 0;
 	if (ac != 1)
 		perror("Usage: ./hsh");
+	check_env = create_env_var();
+	if (check_env == NULL)
+		perror("Unable to create environment variable!\n");
 	while (state)
 	{
-		/* start C shell */
-		printf("($) ");
-		++comnd_cnt;
-		line = getline(&lineptr, &len, stdin);
-		if (line == -1)
+		isNonInteractive = isatty(STDIN_FILENO);
+		if (isNonInteractive)
 		{
-			printf("\n");
-			free(lineptr);
-			exit(EXIT_SUCCESS);
+			/* start C shell */
+			write(STDIN_FILENO, start, _strlen(start));
+			++comnd_cnt;
+			for_free = &lineptr;
+			line = getline(&lineptr, &len, stdin);
+			if (line == -1)
+			{
+				write(STDOUT_FILENO, "\n", 1);
+				if (check_env != NULL)
+					free_mem_sh(check_env, 0);
+				free(lineptr);
+				exit(EXIT_SUCCESS);
+			}
+			if (_strlen(lineptr) > 1)
+				execmd(arg, lineptr);
+			else
+				free(lineptr);
+			len = 0;
 		}
-		if (lineptr != NULL)
-			execmd(arg, lineptr);
-		else
-			free(lineptr);
-		len = 0;
-
 	}
+	free_mem_sh(check_env, 0);
 	return (0);
 }
 
@@ -102,9 +110,9 @@ void execmd(char *arg, char *lineptr)
 	char *lineptr_cpy, *pathname, **argv;
 	SRCH *new_str;
 	pid_t child_pid = 1;
-	int ex, status;
-	char ext_sts[12] = "";
+	int ex, status, cmp;
 
+	ext_sts[0] = '\0';
 	alloc_mem(&lineptr, &lineptr_cpy, &argv);
 	if (argv == NULL)
 		return;
@@ -112,10 +120,11 @@ void execmd(char *arg, char *lineptr)
 		new_str = dir_ext(argv[0]);
 	if (new_str == NULL)
 	{
-		if (strncmp("exit", argv[0], 4) == 0)
+		cmp = _compare(argv);
+		if (cmp == 1)
 			FREE_EXIT_B;
-		else
-			dprintf(STDERR_FILENO, "%s: %i: %s: not found\n", arg, comnd_cnt, argv[0]);
+		else if (cmp != 0)
+			m_dprintf(arg, argv[0]);
 	}
 	else if (new_str->val == 0)
 		CREATE_CHILD;
@@ -123,11 +132,11 @@ void execmd(char *arg, char *lineptr)
 		FREE_EXIT;
 	else if (child_pid == 0)
 	{
-		ex = execve(pathname, argv, environ);
+		ex = execve(pathname, argv, my_environ);
 		if (ex == -1)
 		{
-			dprintf(STDERR_FILENO, "%s: ", arg);
-			perror("");
+			write(STDERR_FILENO, arg, sizeof(char) * _strlen(arg));
+			perror(":");
 		}
 		FREE_EXIT;
 	}
@@ -140,3 +149,42 @@ void execmd(char *arg, char *lineptr)
 	}
 }
 
+/**
+ * create_env_var - create environmental variable for the process
+ * Return: pointer to the environmental variable or NULL
+ */
+char **create_env_var(void)
+{
+	char *h;
+	int i, j, m, n;
+
+	signal(SIGINT, handl_sgnl);
+	env_count = 0;
+	/* Allocate memory for the environmental variable */
+	for (i = 0; environ[i] != NULL; i++)
+		env_count++;
+	my_environ = malloc(sizeof(char *) * (env_count + 1));
+	if (my_environ == NULL)
+		return (NULL);
+	for (i = 0; environ[i] != NULL; i++)
+	{
+		h = environ[i];
+		my_environ[i] = malloc(sizeof(char) * (_strlen(h) + 1));
+		if (my_environ[i] == NULL)
+		{
+			for (j = i - 1; j <= 0; j--)
+				free(my_environ[j]);
+			free(my_environ);
+			return (NULL);
+		}
+	}
+	/* Initialize memory for the environment variable */
+	for (m = 0; environ[m] != NULL; m++)
+	{
+		for (n = 0; environ[m][n] != '\0'; n++)
+			my_environ[m][n] = environ[m][n];
+		my_environ[m][n] =  '\0';
+	}
+	my_environ[m] = NULL;
+	return (my_environ);
+}
