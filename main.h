@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <dirent.h>
+#include <fcntl.h>
 typedef struct srch
 {
         char *str;
