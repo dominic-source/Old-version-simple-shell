@@ -21,6 +21,7 @@ int compare_string_and_char(const char *str, char c)
 		else
 			return (-1);
 	}
+	return (-1);
 }
 
 /**
@@ -30,12 +31,11 @@ int compare_string_and_char(const char *str, char c)
  *
  * Return: pointer to next token
  */
-
 char *_strtok(char *str, const char *delim)
 {
 	static char *last_token;
 	char *token;
-	int j = 0, i = 0, n;
+	int j = 0;
 
 	/* If called with NULL argument, continue from last token found*/
 	if (str == NULL)
@@ -46,27 +46,26 @@ char *_strtok(char *str, const char *delim)
 		}
 		str = last_token;
 	}
-
-	/* Find the start of the next token */
-	while (str[j] != '\0' && compare_string_and_char(delim, str[j]) != 0)
+	/* skip leading delimiters */
+	while (str[j] != '\0' && compare_string_and_char(delim, str[j]) == 0)
 	{
 		j++;
 	}
-	token = malloc(sizeof(char) * j);
-
-	for (i = 0; i < j; i++)
-	{
-		token[i] = str[i];
-		str[i] = '\0';
-	}
-	token[j] = '\0';
-
 	if (str[j] == '\0')
 	{
 		last_token =  NULL;
-		return (token);
+		return (NULL);
 	}
-	str = &str[j + 1];
-	last_token = str;
+	token = str;
+	/*  Find the end of the token */
+	while (str[j] != '\0' && compare_string_and_char(delim, str[j]) != 0)
+		j++;
+	if (str[j] != '\0')
+	{
+		str[j] = '\0';
+		last_token = &str[j + 1];
+	}
+	else
+		last_token  = NULL;
 	return (token);
 }

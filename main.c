@@ -31,45 +31,45 @@
  * @argv: arguments
  * Return: 0 or -1
  */
-int main(int ac, char **argv)
+int main(int ac, char *argv[])
 {
 	char *arg = argv[0], *lineptr = NULL, **check_env, *start = "($) ";
 	ssize_t line;
 	size_t len = 0;
-	int state = 1, isNonInteractive;
+	int state = 1, interactive;
 
+	if (ac > 2)
+		perror("Usage: ./hsh");
 	parent_pid = getpid();
 	getcwd(prev_dir, 1024);
 	switch_dir = 0;
-	if (ac != 1)
-		perror("Usage: ./hsh");
 	check_env = create_env_var();
+	interactive = isatty(STDIN_FILENO);
 	if (check_env == NULL)
 		perror("Unable to create environment variable!\n");
-	while (state)
+	while (state && interactive)
 	{
-		isNonInteractive = isatty(STDIN_FILENO);
-		if (isNonInteractive)
+		write(STDIN_FILENO, start, _strlen(start));
+		++comnd_cnt;
+		for_free = &lineptr;
+		line = _getline(&lineptr, &len, STDIN_FILENO);
+		if (line == -1)
 		{
-			/* start C shell */
-			write(STDIN_FILENO, start, _strlen(start));
-			++comnd_cnt;
-			for_free = &lineptr;
-			line = _getline(&lineptr, &len, stdin);
-			if (line == -1)
-			{
-				write(STDOUT_FILENO, "\n", 1);
-				if (check_env != NULL)
-					free_mem_sh(check_env, 0);
-				free(lineptr);
-				exit(EXIT_SUCCESS);
-			}
-			if (_strlen(lineptr) > 1)
-				execmd(arg, lineptr);
-			else
-				free(lineptr);
-			len = 0;
+			write(STDOUT_FILENO, "\n", 1);
+			if (check_env != NULL)
+				free_mem_sh(check_env, 0);
+			free(lineptr);
+			exit(EXIT_SUCCESS);
 		}
+		if (_strlen(lineptr) > 1)
+			execmd(arg, lineptr);
+		else
+			free(lineptr);
+	}
+	if (!interactive)
+	{
+		line = _getline(&lineptr, &len, STDIN_FILENO);
+		execmd(arg, lineptr);
 	}
 	free_mem_sh(check_env, 0);
 	return (0);

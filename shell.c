@@ -69,9 +69,7 @@ void handl_sgnl(int sig)
 {
 	if (sig == SIGINT)
 	{
-		free_mem_sh(my_environ, 0);
-		if (*for_free != NULL)
-			free(*for_free);
+		free_mem_sh(my_environ, 2, *for_free, *for_free2);
 		write(STDOUT_FILENO, "\n", 1);
 		exit(EXIT_SUCCESS);
 	}

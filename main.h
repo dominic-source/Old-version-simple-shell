@@ -11,16 +11,24 @@
 #include <stdarg.h>
 #include <dirent.h>
 #include <fcntl.h>
+
+/**
+ * struct srch - search for commadn
+ * @str: string command
+ * @val: state of string
+ */
 typedef struct srch
 {
 	char *str;
 	int val;
 } SRCH;
+
 extern char **environ;
 char **my_environ;
 SRCH *dir_ext(char *str);
 char **create_env_var(void);
 char **for_free;
+char **for_free2;
 
 char *_strcat(char *dest, char *src);
 char *_strcpy(char *dest, char *src);
@@ -42,6 +50,14 @@ void alloc_mem(char **, char **, char ***);
 void free_mem_sh(char **argv, int count, ...);
 void dir(char *str);
 void m_dprintf(char *arg, char *argv);
+ssize_t _getline(char **lineptr, size_t *n, int stream);
+void _memcpy(char *lineptr, char *buffer, int position);
+ssize_t alloc_getline(char **, char **, size_t, size_t *n);
+ssize_t realloc_free(char **lineptr, char **buffer);
+
+char *_strtok(char *str, const char *delim);
+int compare_string_and_char(const char *str, char c);
+int _fgetc(FILE *fp);
 
 pid_t parent_pid;
 int comnd_cnt;
