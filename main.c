@@ -55,7 +55,7 @@ int main(int ac, char **argv)
 			write(STDIN_FILENO, start, _strlen(start));
 			++comnd_cnt;
 			for_free = &lineptr;
-			line = getline(&lineptr, &len, stdin);
+			line = _getline(&lineptr, &len, stdin);
 			if (line == -1)
 			{
 				write(STDOUT_FILENO, "\n", 1);

@@ -35,16 +35,16 @@ void alloc_mem(char **ptr, char **ptr_cpy, char ***argv)
 		return;
 	_strcpy(*ptr_cpy, *ptr);
 	/* count the strings and allocate memory for array*/
-	token = strtok(*ptr, delim);
+	token = _strtok(*ptr, delim);
 	for (cnt = 0; token != NULL; cnt++)
-		token = strtok(NULL, delim);
+		token = _strtok(NULL, delim);
 
 	*argv = malloc(sizeof(char *) * (cnt + 1));
 	if (*argv == NULL)
 		exit(100);
 
 	/* Allocate memory for each string and add it to array */
-	token = strtok(*ptr_cpy, delim);
+	token = _strtok(*ptr_cpy, delim);
 	for (j = 0; token != NULL; j++)
 	{
 		(*argv)[j] = malloc(sizeof(char) * (_strlen(token) + 1));
@@ -56,7 +56,7 @@ void alloc_mem(char **ptr, char **ptr_cpy, char ***argv)
 			free(*argv);
 		}
 		_strcpy((*argv)[j], token);
-		token = strtok(NULL, delim);
+		token = _strtok(NULL, delim);
 	}
 	(*argv)[j] = NULL;
 }

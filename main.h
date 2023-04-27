@@ -13,9 +13,9 @@
 #include <fcntl.h>
 typedef struct srch
 {
-        char *str;
-        int val;
-}SRCH;
+	char *str;
+	int val;
+} SRCH;
 extern char **environ;
 char **my_environ;
 SRCH *dir_ext(char *str);
