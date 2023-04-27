@@ -19,17 +19,17 @@ SRCH *dir_ext(char *str)
 	entity = readdir(dir);
 	if (entity == NULL)
 		return (NULL);
-	if (strncmp(req_dir, str, 5) == 0)
+	if (_strncmp(req_dir, str, 5) == 0)
 		str = &str[5];
 	while (entity != NULL)
 	{
 		fname = entity->d_name;
-		if (strcmp(fname, str) == 0)
+		if (_strcmp(fname, str) == 0)
 		{
 			new_str = malloc(sizeof(SRCH));
 			if (new_str == NULL)
 				return (NULL);
-			length = strlen(fname) + strlen(req_dir) + 1;
+			length = _strlen(fname) + _strlen(req_dir) + 1;
 			new_str->str = malloc(sizeof(char) * length);
 			if (new_str->str == NULL)
 			{
@@ -37,8 +37,8 @@ SRCH *dir_ext(char *str)
 				return (NULL);
 			}
 			new_str->str[0] = '\0';
-			new_str->str = strcat(new_str->str, req_dir);
-			new_str->str = strcat(new_str->str, fname);
+			new_str->str = _strcat(new_str->str, req_dir);
+			new_str->str = _strcat(new_str->str, fname);
 			new_str->val = 0;
 			closedir(dir);
 			return (new_str);
@@ -48,4 +48,3 @@ SRCH *dir_ext(char *str)
 	closedir(dir);
 	return (NULL);
 }
-
