@@ -48,3 +48,28 @@ SRCH *dir_ext(char *str)
 	closedir(dir);
 	return (NULL);
 }
+
+/**
+ * free_mem_sh - free memories
+ * @count: argument
+ * @argv: arguments from command line
+ */
+void free_mem_sh(char **argv, int count, ...)
+{
+	char *ptr;
+	va_list ap;
+	int i;
+
+	for (i = 0; argv[i] != NULL; i++)
+		free(argv[i]);
+
+	free(argv);
+	va_start(ap, count);
+	for (i = 0; i < count; i++)
+	{
+		ptr = va_arg(ap, char *);
+		free(ptr);
+	}
+	va_end(ap);
+}
+

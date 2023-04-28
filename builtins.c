@@ -3,9 +3,10 @@
 /**
  * _compare - compare strings and print string if necessary
  * @ag: the string to compare
+ * @arg: name of script
  * Return: 1 if true, 0 if false
  */
-int _compare(char **ag)
+int _compare(char **ag, char *arg)
 {
 	int i;
 
@@ -26,17 +27,17 @@ int _compare(char **ag)
 	}
 	else if ((_strcmp("setenv", ag[0]) == 0) &&  ag[1] != NULL && ag[2] != NULL)
 	{
-		_setenv(ag[1], ag[2]);
+		_setenv(ag, arg);
 		return (0);
 	}
 	else if ((_strcmp("unsetenv", ag[0]) == 0) && ag[1] != NULL && ag[2] == NULL)
 	{
-		_unsetenv(ag[1]);
+		_unsetenv(ag[1], arg);
 		return (0);
 	}
 	else if ((_strcmp("cd", ag[0]) == 0))
 	{
-		_cd(ag[1]);
+		_cd(ag, arg);
 		return (0);
 	}
 	return (-1);
@@ -45,17 +46,18 @@ int _compare(char **ag)
 
 /**
  * _setenv - set environment variable
- * @name: name of variable
- * @value: value of variable
+ * @argv: array of variable
+ * @arg: name of executable
  */
-void _setenv(char *name, char *value)
+void _setenv(char **argv, char *arg)
 {
-	size_t i, j, k, length = _strlen(name) + _strlen(value) + 2;
+	size_t i, j, k, length = _strlen(argv[1]) + _strlen(argv[2]) + 2;
 
-	/* Set variable if it exit */
+	if (argv[1] == NULL || argv[2] == NULL)
+		m_dprintf(arg, argv[0], "not found");
 	for (i = 0; my_environ[i] != NULL; i++)
 	{
-		if (_strncmp(my_environ[i], name, _strlen(name)) == 0)
+		if (_strncmp(my_environ[i], argv[1], _strlen(argv[1])) == 0)
 		{
 			my_environ[i] = realloc(my_environ[i], sizeof(char) * length);
 			if (my_environ[i] == NULL)
@@ -63,11 +65,11 @@ void _setenv(char *name, char *value)
 				perror("Unable to reallocate appropriate memory!\n");
 				return;
 			}
-			for (j = 0; j < _strlen(name); j++)
-				my_environ[i][j] = name[j];
+			for (j = 0; j < _strlen(argv[1]); j++)
+				my_environ[i][j] = argv[1][j];
 			my_environ[i][j] = '=';
-			for (k = 0; k < _strlen(value); k++)
-				my_environ[i][++j] = value[k];
+			for (k = 0; k < _strlen(argv[2]); k++)
+				my_environ[i][++j] = argv[2][k];
 			my_environ[i][++j] = '\0';
 			return;
 		}
@@ -79,11 +81,11 @@ void _setenv(char *name, char *value)
 	my_environ[env_count] = malloc(sizeof(char) * length);
 	if (my_environ[env_count] == NULL)
 		return;
-	for (j = 0; j < _strlen(name); j++)
-		my_environ[env_count][j] = name[j];
+	for (j = 0; j < _strlen(argv[1]); j++)
+		my_environ[env_count][j] = argv[1][j];
 	my_environ[env_count][j] = '=';
-	for (k = 0; k < _strlen(value); k++)
-		my_environ[env_count][++j] = value[k];
+	for (k = 0; k < _strlen(argv[2]); k++)
+		my_environ[env_count][++j] = argv[2][k];
 	my_environ[env_count][++j] = '\0';
 	my_environ[env_count + 1] = NULL;
 	env_count++;
@@ -95,11 +97,17 @@ void _setenv(char *name, char *value)
 /**
  * _unsetenv - unset environment variable
  * @name: name of variable
+ * @arg: name of executable
  */
-void _unsetenv(char *name)
+void _unsetenv(char *name, char *arg)
 {
 	int i, j;
 
+	if (name == NULL)
+	{
+		m_dprintf(arg, name, "not found");
+		return;
+	}
 	for (i = 0; my_environ[i] != NULL; i++)
 	{
 		if (_strncmp(my_environ[i], name, _strlen(name)) == 0)
@@ -118,12 +126,12 @@ void _unsetenv(char *name)
 
 /**
  * _cd - change directory
- * @str: The file directory you want to enter
- *
+ * @arg: argumens which includes directories
+ * @ag: name of executable
  */
-void _cd(char *str)
+void _cd(char **arg, char *ag)
 {
-	char *pwd = "PWD";
+	char *str = arg[1], *pwd = "PWD", *ar[3];
 	int f, i;
 
 	if (str == NULL)
@@ -140,13 +148,11 @@ void _cd(char *str)
 		if (switch_dir == 1)
 		{
 			switch_dir = 0;
-			str = NULL;
 			str = prev_dir;
 		}
 		else
 		{
 			switch_dir = 1;
-			str = NULL;
 			if (*hn_dir)
 				str = hn_dir;
 			else
@@ -156,11 +162,13 @@ void _cd(char *str)
 	}
 	else
 	{
-		f = chdir(str);
-		if (f == 0)
+		if (chdir(str) == 0)
 			dir(str);
 	}
-	_setenv(pwd, str);
+	ar[0] = arg[0];
+	ar[1] = pwd;
+	ar[2] = str;
+	_setenv(ar, ag);
 	if (f == -1)
 		perror("Error: ");
 }

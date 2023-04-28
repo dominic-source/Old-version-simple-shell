@@ -25,6 +25,7 @@
 		pathname = new_str->str;\
 	} \
 	while (0)
+
 /**
  * main - run a shell
  * @ac: count
@@ -36,18 +37,18 @@ int main(int ac, char *argv[])
 	char *arg = argv[0], *lineptr = NULL, **check_env, *start = "($) ";
 	ssize_t line;
 	size_t len = 0;
-	int state = 1, interactive;
+	int state = ac, interactive, fd;
 
-	if (ac > 2)
-		perror("Usage: ./hsh");
 	parent_pid = getpid();
 	getcwd(prev_dir, 1024);
 	switch_dir = 0;
+	ext_sts[0] = '\0';
 	check_env = create_env_var();
 	interactive = isatty(STDIN_FILENO);
+	fd = handle_sh(argv[1], arg);
 	if (check_env == NULL)
 		perror("Unable to create environment variable!\n");
-	while (state && interactive)
+	while (state && interactive && fd == 1 && argv[1] == NULL)
 	{
 		write(STDIN_FILENO, start, _strlen(start));
 		++comnd_cnt;
@@ -66,37 +67,59 @@ int main(int ac, char *argv[])
 		else
 			free(lineptr);
 	}
-	if (!interactive)
-	{
-		line = _getline(&lineptr, &len, STDIN_FILENO);
-		execmd(arg, lineptr);
-	}
+	if (!interactive || fd > 1)
+		non_interactive(&lineptr, &arg, fd);
 	free_mem_sh(check_env, 0);
 	return (0);
 }
 
 /**
- * free_mem_sh - free memories
- * @count: last argument
- * @argv: arguments from command line
+ * non_interactive - handle non interactive mode
+ * @lptr: storage of what was read
+ * @arg: first argument
+ * @fd: file descriptor
  */
-void free_mem_sh(char **argv, int count, ...)
+void non_interactive(char **lptr, char **arg, int fd)
 {
-	char *ptr;
-	va_list ap;
-	int i;
+	ssize_t line;
+	size_t len = 0;
+	int dnt = 0;
 
-	for (i = 0; argv[i] != NULL; i++)
-		free(argv[i]);
-
-	free(argv);
-	va_start(ap, count);
-	for (i = 0; i < count; i++)
+	line = _getline(lptr, &len, fd != 1 ? fd : STDIN_FILENO);
+	if (fd == 1)
+		execmd(*arg, *lptr);
+	while (line != -1 && fd != 1)
 	{
-		ptr = va_arg(ap, char *);
-		free(ptr);
+		if (dnt != 0)
+		{
+			if (**lptr != '\0' && _strcmp(*lptr, " ") != 0 && _strcmp(*lptr, "\n"))
+				execmd(*arg, *lptr);
+		}
+		line = _getline(lptr, &len, fd != 1 ? fd : STDIN_FILENO);
+		dnt++;
 	}
-	va_end(ap);
+	close(fd);
+}
+
+
+/**
+ * handle_sh - handles the opening of file only
+ * @str: diretory to open
+ * @arg: name of executable
+ * Return: 1 or file descriptor
+ */
+int handle_sh(char *str, char *arg)
+{
+	int fd = 1;
+
+	if (str != NULL)
+		fd = open(str, O_RDONLY);
+	if (fd == -1 && str != NULL)
+	{
+		m_dprintf(arg, "Can't open", str);
+		return (1);
+	}
+	return (fd);
 }
 
 
@@ -112,19 +135,18 @@ void execmd(char *arg, char *lineptr)
 	pid_t child_pid = 1;
 	int ex, status, cmp;
 
-	ext_sts[0] = '\0';
 	alloc_mem(&lineptr, &lineptr_cpy, &argv);
-	if (argv == NULL)
+	if (argv == NULL || arg == NULL)
 		return;
 	if (argv[0] != NULL)
 		new_str = dir_ext(argv[0]);
 	if (new_str == NULL)
 	{
-		cmp = _compare(argv);
+		cmp = _compare(argv, arg);
 		if (cmp == 1)
 			FREE_EXIT_B;
 		else if (cmp != 0)
-			m_dprintf(arg, argv[0]);
+			m_dprintf(arg, argv[0], "not found");
 	}
 	else if (new_str->val == 0)
 		CREATE_CHILD;
@@ -137,6 +159,7 @@ void execmd(char *arg, char *lineptr)
 		{
 			write(STDERR_FILENO, arg, sizeof(char) * _strlen(arg));
 			perror(":");
+			_strcpy(ext_sts, "127");
 		}
 		FREE_EXIT;
 	}

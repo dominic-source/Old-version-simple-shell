@@ -79,8 +79,9 @@ void handl_sgnl(int sig)
  * m_dprintf - single used for function to write to stderr
  * @arg: executable
  * @argv: first shell argument
+ * @str: message
  */
-void m_dprintf(char *arg, char *argv)
+void m_dprintf(char *arg, char *argv, char *str)
 {
 	write(STDERR_FILENO, arg, sizeof(char) * _strlen(arg));
 	write(STDERR_FILENO, ": ", 2);
@@ -88,7 +89,10 @@ void m_dprintf(char *arg, char *argv)
 	write(STDERR_FILENO, ": ", 2);
 	write(STDERR_FILENO, argv, sizeof(char) * _strlen(argv));
 	write(STDERR_FILENO, ": ", 2);
-	write(STDERR_FILENO, "not found\n", 10);
+	write(STDERR_FILENO, str, sizeof(char) * _strlen(str));
+	write(STDERR_FILENO, "\n", 1);
+	m_r = "-127";
+	_strcpy(ext_sts, m_r);
 }
 
 /**
